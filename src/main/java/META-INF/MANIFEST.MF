@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Class-Path: .
+Main-Class: com.ecm.batchprocess.ControlFileGeneration
+
+Name: com.sun.xml.bind.v2.runtime
+Implementation-Version: hudson-jaxb-ri-2.1-463
+
+Name: org.apache.log4j
+Implementation-Vendor: "Apache Software Foundation"
+DynamicImport-Package: *
+Implementation-Title: log4j
+Implementation-Version: 1.2.17
+
+Name: org/apache/log4j/
+Implementation-Vendor: "Apache Software Foundation"
+Implementation-Title: log4j
+Implementation-Version: 1.2.8
+
