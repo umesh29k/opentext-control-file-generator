@@ -234,76 +234,77 @@ public class ControlFileGeneration {
         Import.Node node = new Import.Node();
         try {
             for (int i = 0; i < files.length; i++) {
-                if (files[i].isFile() && files[i].length() > 0L) {
-                    pdfFileName = files[i].getName();
-                    logger.debug("pdfFileName " + pdfFileName);
-                    HashMap<String, String> fileNameSegements = new HashMap<String, String>();
-                    pdfToken = new StringTokenizer(pdfFileName, ".");
-                    pdfFile = pdfToken.nextToken();
-                    extn = pdfToken.nextToken();
-                    fileNameSegements.put("EXT", extn);
-                    cimplSt = new StringTokenizer(pdfFile, "_");
-                    cimplInitial = cimplSt.nextToken();
-                    //cimplSt2 = cimplSt.nextToken();
-                    int count = 0;
+                if (files[i].isFile())
+                    if (files[i].length() > 0L) {
+                        pdfFileName = files[i].getName();
+                        logger.debug("pdfFileName " + pdfFileName);
+                        HashMap<String, String> fileNameSegements = new HashMap<String, String>();
+                        pdfToken = new StringTokenizer(pdfFileName, ".");
+                        pdfFile = pdfToken.nextToken();
+                        extn = pdfToken.nextToken();
+                        fileNameSegements.put("EXT", extn);
+                        cimplSt = new StringTokenizer(pdfFile, "_");
+                        cimplInitial = cimplSt.nextToken();
+                        //cimplSt2 = cimplSt.nextToken();
+                        int count = 0;
 
-                    if (cimplInitial.equalsIgnoreCase("CA")) {
-                        List<String> regions = Arrays.asList(getPropertyValue("Region").split(","));
-                        region = cimplSt.nextToken();
-                        if (regions.contains(region)) {
-                            String filter = cimplSt.nextToken();
-                            String path = String.valueOf(getPropertyValue("Enterprise")) +
-                                    ':' +
-                                    getPropertyValue("CanadaInterCompany") +
-                                    ':' + region;
-                            if (getPropertyValue(region).indexOf(filter) >= 0)
-                                path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
-                            fileNameSegements.put("otcsLocation", path);
-                        } else if (getPropertyValue("EndingBalance").contains(region)) {
+                        if (cimplInitial.equalsIgnoreCase("CA")) {
+                            List<String> regions = Arrays.asList(getPropertyValue("Region").split(","));
                             region = cimplSt.nextToken();
-                            if (getPropertyValue("EndingBalance").contains(region)) {
-                                fileNameSegements.put("otcsLocation",
-                                        String.valueOf(getPropertyValue("Enterprise")) +
-                                                ':' +
-                                                getPropertyValue("CanadaInterCompany") +
-                                                ':' +
-                                                getPropertyValue("Balance"));
+                            if (regions.contains(region)) {
+                                String filter = cimplSt.nextToken();
+                                String path = String.valueOf(getPropertyValue("Enterprise")) +
+                                        ':' +
+                                        getPropertyValue("CanadaInterCompany") +
+                                        ':' + region;
+                                if (getPropertyValue(region).indexOf(filter) >= 0)
+                                    path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
+                                fileNameSegements.put("otcsLocation", path);
+                            } else if (getPropertyValue("EndingBalance").contains(region)) {
+                                region = cimplSt.nextToken();
+                                if (getPropertyValue("EndingBalance").contains(region)) {
+                                    fileNameSegements.put("otcsLocation",
+                                            String.valueOf(getPropertyValue("Enterprise")) +
+                                                    ':' +
+                                                    getPropertyValue("CanadaInterCompany") +
+                                                    ':' +
+                                                    getPropertyValue("Balance"));
+                                } else
+                                    region = null;
                             } else
                                 region = null;
-                        } else
-                            region = null;
-                    }
+                        }
 
-                    if (region != null) {
-                        node = new Import.Node();
-                        node.setType(getPropertyValue("TYPE"));
-                        node.setAction(getPropertyValue("ACTION"));
-                        node.setFile(String.valueOf(getPropertyValue("FilePath")) + pdfFileName);
-                        node.setLocation(fileNameSegements.get("otcsLocation"));
-                        moveFileIntoDestinationFolder(
-                                files[i],
-                                String.valueOf(getPropertyValue("ARCHIVEFOLDER")) + "/");
-                        successCounter++;
-                        imp.getNode().add(node);
-                        if (successCounter > 0) {
-                            convertToXML(imp);
+                        if (region != null) {
+                            node = new Import.Node();
+                            node.setType(getPropertyValue("TYPE"));
+                            node.setAction(getPropertyValue("ACTION"));
+                            node.setFile(String.valueOf(getPropertyValue("FilePath")) + pdfFileName);
+                            node.setLocation(fileNameSegements.get("otcsLocation"));
+                            moveFileIntoDestinationFolder(
+                                    files[i],
+                                    String.valueOf(getPropertyValue("ARCHIVEFOLDER")) + "/");
+                            successCounter++;
+                            imp.getNode().add(node);
+                            if (successCounter > 0) {
+                                convertToXML(imp);
+                            } else {
+                                logger.debug("***************No files in Input Folder**************");
+                            }
                         } else {
-                            logger.debug("***************No files in Input Folder**************");
-                        }
-                    } else {
-                        moveFileIntoDestinationFolder(
-                                files[i],
-                                String.valueOf(getPropertyValue("FAILEDFOLDER")) + "/");
-                        logger.debug("File name corrupt");
-                        Email.SendEmail();
-                        try {
-                            throw new CimplErrorMessage(pdfFile);
-                        } catch (CimplErrorMessage adobeError) {
-                            logger.error(adobeError.getMessage());
-                            failCounter++;
+                            moveFileIntoDestinationFolder(
+                                    files[i],
+                                    String.valueOf(getPropertyValue("FAILEDFOLDER")) + "/");
+                            logger.debug("File name corrupt");
+                            Email.SendEmail();
+                            try {
+                                throw new CimplErrorMessage(pdfFile);
+                            } catch (CimplErrorMessage adobeError) {
+                                logger.error(adobeError.getMessage());
+                                failCounter++;
+                            }
                         }
                     }
-                }
             }
         } catch (
                 Exception e) {
