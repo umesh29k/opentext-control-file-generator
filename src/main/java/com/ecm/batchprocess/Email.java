@@ -19,11 +19,11 @@ public class Email {
         properties.put("mail.smtp.auth", "true");
         Session session = Session.getDefaultInstance(properties,
                 new Authenticator() {
-                    /*    */
+
                     protected PasswordAuthentication getPasswordAuthentication() {
                         return new PasswordAuthentication(user, password);
                     }
-                    /*    */
+
                 });
         try {
             MimeMessage message = new MimeMessage(session);

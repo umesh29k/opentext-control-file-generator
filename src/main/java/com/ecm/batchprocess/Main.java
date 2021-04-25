@@ -17,7 +17,7 @@ public class Main implements CommandLineRunner {
     @Autowired
     private ControlFileGeneration controlFileGeneration;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception{
 
         //disabled banner, don't want to see the spring logo
         SpringApplication app = new SpringApplication(Main.class);
