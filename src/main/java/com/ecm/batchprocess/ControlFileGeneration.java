@@ -1,6 +1,9 @@
 package com.ecm.batchprocess;
 
+import com.ecm.batchprocess.model.BatchProperties;
 import com.ecm.xmlgen.Import;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,8 @@ public class ControlFileGeneration {
 
     public void main() throws CimplErrorMessage, IOException, ClassNotFoundException, SQLException {
         ControlFileGeneration obj = new ControlFileGeneration();
+        getConfigYml();
+
         try {
             confighandle.load(new FileInputStream("config.properties"));
             loghandle.load(new FileInputStream("log4j.properties"));
@@ -33,6 +38,7 @@ public class ControlFileGeneration {
             throw new CimplErrorMessage(
                     "Property file not found");
         }
+
         File[] localFiles = obj.getLocalFiles();
         if (localFiles != null) {
             if (localFiles.length > 0) {
@@ -370,5 +376,26 @@ public class ControlFileGeneration {
             return value;
         }
         return null;
+    }
+
+    public List<BatchProperties> getConfigYml() {
+        // Loading the YAML file from the /resources folder
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        // Instantiating a new ObjectMapper as a YAMLFactory
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+
+        // Mapping the employee from the YAML file to the Employee class
+        BatchProperties batchProperties = new BatchProperties();
+        try {
+            FileInputStream fis = new FileInputStream("config.yaml");
+            batchProperties = om.readValue(fis, BatchProperties.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Printing out the information
+        System.out.println("OpCos Data " + batchProperties.getOpCos().toString());
+        return batchProperties.getOpCos();
     }
 }
