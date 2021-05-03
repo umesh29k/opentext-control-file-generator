@@ -1,6 +1,10 @@
 package com.ecm.batchprocess;
 
+import com.ecm.batchprocess.model.BatchProperties;
+import com.ecm.batchprocess.model.OpCo;
 import com.ecm.xmlgen.Import;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.springframework.stereotype.Service;
@@ -21,9 +25,21 @@ public class ControlFileGeneration {
     static final Logger logger = Logger.getLogger(ControlFileGeneration.class);
     private static Properties confighandle = new Properties();
     private static Properties loghandle = new Properties();
+    private Map<String, Map<String, String>> opCos = new HashMap<>();
 
     public void main() throws CimplErrorMessage, IOException, ClassNotFoundException, SQLException {
         ControlFileGeneration obj = new ControlFileGeneration();
+        List<OpCo> opCosList = getConfigYml();
+        for (OpCo opco : opCosList) {
+            String region = opco.getRegion();
+            String[] siteIds = opco.getSiteIds().split(",");
+            String[] siteNames = opco.getSiteNames().split(",");
+            Map<String, String> mapper = new HashMap<>();
+            for (int i = 0; i < siteIds.length; i++) {
+                mapper.put(siteIds[i], siteNames[i]);
+            }
+            opCos.put(region, mapper);
+        }
         try {
             confighandle.load(new FileInputStream("config.properties"));
             loghandle.load(new FileInputStream("log4j.properties"));
@@ -52,22 +68,21 @@ public class ControlFileGeneration {
         if (listOfFiles != null)
             logger.debug("Number of files: " + listOfFiles.length);
         return listOfFiles;
-
     }
 
     public void processImportFiles(File[] files) throws ClassNotFoundException, SQLException, FileNotFoundException, IOException {
         logger.debug("Start of processImportFiles Method");
-        StringTokenizer pdfToken = null;
+        StringTokenizer fileNameArray = null;
         StringTokenizer st = null;
         StringTokenizer cimplSt = null;
         String cimplInitial = null;
         String cimplSt2 = null;
-        String pdfFileName = null;
+        String fileName = null;
         String VendorName = null;
         String AccountNumber = null;
         String InvoiceNumber = null;
         String InvoiceDate = null;
-        String pdfFile = null;
+        String file = null;
         String extn = null;
         String jobStatus = null;
         boolean jobFailed = false;
@@ -82,14 +97,14 @@ public class ControlFileGeneration {
                 InvoiceNumber = "InvoiceNumber";
                 InvoiceDate = "InvoiceDate";
                 if (files[i].isFile() && files[i].length() > 0L) {
-                    pdfFileName = files[i].getName();
-                    logger.debug("pdfFileName " + pdfFileName);
+                    fileName = files[i].getName();
+                    logger.debug("fileName " + fileName);
                     HashMap<String, String> fileNameSegements = new HashMap<String, String>();
-                    pdfToken = new StringTokenizer(pdfFileName, ".");
-                    pdfFile = pdfToken.nextToken();
-                    extn = pdfToken.nextToken();
+                    fileNameArray = new StringTokenizer(fileName, ".");
+                    file = fileNameArray.nextToken();
+                    extn = fileNameArray.nextToken();
                     fileNameSegements.put("EXT", extn);
-                    cimplSt = new StringTokenizer(pdfFile, "_");
+                    cimplSt = new StringTokenizer(file, "_");
                     cimplInitial = cimplSt.nextToken();
                     cimplSt2 = cimplSt.nextToken();
                     st = new StringTokenizer(cimplSt2, "-");
@@ -103,39 +118,28 @@ public class ControlFileGeneration {
                                             "VendorName",
                                             st.nextToken());
                                     VendorName = fileNameSegements.get("VendorName");
-
                                 case 2:
                                     fileNameSegements.put(
                                             "AccountNumber",
                                             st.nextToken());
                                     AccountNumber = fileNameSegements.get("AccountNumber");
-
                                 case 3:
                                     fileNameSegements.put(
                                             "InvoiceNumber",
                                             st.nextToken());
                                     InvoiceNumber = fileNameSegements.get("InvoiceNumber");
-
                                 case 4:
                                     fileNameSegements.put(
                                             "InvoiceDate",
                                             st.nextToken());
-
                                     InvoiceDate = fileNameSegements.get("InvoiceDate");
-
                             }
-
                         }
-
                         node = new Import.Node();
-
                         node.setType(getPropertyValue("TYPE"));
-
                         node.setAction(getPropertyValue("ACTION"));
-
                         node.setFile(String.valueOf(getPropertyValue("FilePath")) +
-
-                                pdfFileName);
+                                fileName);
                         node.setLocation(
                                 String.valueOf(getPropertyValue("Enterprise")) +
                                         ':' +
@@ -172,11 +176,9 @@ public class ControlFileGeneration {
                         node.setCategory(category);
                     }
                     if (VendorName != null && AccountNumber != null && InvoiceNumber != null && InvoiceDate != null) {
-
                         moveFileIntoDestinationFolder(
                                 files[i],
                                 String.valueOf(getPropertyValue("ARCHIVEFOLDER")) + "/");
-
                         successCounter++;
                         imp.getNode().add(node);
                         if (successCounter > 0) {
@@ -184,7 +186,6 @@ public class ControlFileGeneration {
                         } else {
                             logger.debug("***************No files in Input Folder**************");
                         }
-
                     } else {
                         moveFileIntoDestinationFolder(
                                 files[i],
@@ -192,38 +193,35 @@ public class ControlFileGeneration {
                         logger.debug("File name corrupt");
                         Email.SendEmail();
                         try {
-                            throw new CimplErrorMessage(pdfFile);
+                            throw new CimplErrorMessage(file);
                         } catch (CimplErrorMessage adobeError) {
                             logger.error(adobeError.getMessage());
                             failCounter++;
                         }
-
                     }
                 }
             }
         } catch (Exception e) {
             jobFailed = true;
             logger.error(e);
-
         } finally {
             if (jobFailed) {
                 jobStatus = "Incomplete";
             } else {
                 jobStatus = "Complete";
             }
-
         }
-
     }
 
     public void processImportFilesIC(File[] files) throws ClassNotFoundException, SQLException, FileNotFoundException, IOException {
         logger.debug("Start of processImportFiles Method");
-        StringTokenizer pdfToken = null;
-        StringTokenizer cimplSt = null;
+        Map<String, String> opCo = null;
+        String[] fileNameArray = null;
+        String[] cimplSt = null;
         String cimplInitial = null;
         String cimplSt2 = null;
-        String pdfFileName = null;
-        String pdfFile = null;
+        String fileName = null;
+        String file = null;
         String extn = null;
         String jobStatus = null;
         boolean jobFailed = false;
@@ -236,50 +234,47 @@ public class ControlFileGeneration {
             for (int i = 0; i < files.length; i++) {
                 if (files[i].isFile())
                     if (files[i].length() > 0L) {
-                        pdfFileName = files[i].getName();
-                        logger.debug("pdfFileName " + pdfFileName);
+                        fileName = files[i].getName();
+                        logger.debug("fileName " + fileName);
                         HashMap<String, String> fileNameSegements = new HashMap<String, String>();
-                        pdfToken = new StringTokenizer(pdfFileName, ".");
-                        pdfFile = pdfToken.nextToken();
-                        extn = pdfToken.nextToken();
+                        fileNameArray = fileName.split(".");
+                        file = fileNameArray[0];
+                        if (fileNameArray.length >= 2)
+                            extn = fileNameArray[fileNameArray.length - 1];
                         fileNameSegements.put("EXT", extn);
-                        cimplSt = new StringTokenizer(pdfFile, "_");
-                        cimplInitial = cimplSt.nextToken();
+                        cimplSt = file.split("_");
+                        cimplInitial = cimplSt[0];
                         //cimplSt2 = cimplSt.nextToken();
                         int count = 0;
 
                         if (cimplInitial.equalsIgnoreCase("CA")) {
                             List<String> regions = Arrays.asList(getPropertyValue("Region").split(","));
-                            region = cimplSt.nextToken();
-                            if (regions.contains(region)) {
-                                String filter = cimplSt.nextToken();
-                                String path = String.valueOf(getPropertyValue("Enterprise")) +
-                                        ':' +
-                                        getPropertyValue("CanadaInterCompany") +
-                                        ':' + region;
-                                if (getPropertyValue(region).indexOf(filter) >= 0)
-                                    path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
-                                fileNameSegements.put("otcsLocation", path);
-                            } else if (getPropertyValue("EndingBalance").contains(region)) {
-                                region = cimplSt.nextToken();
-                                if (getPropertyValue("EndingBalance").contains(region)) {
-                                    fileNameSegements.put("otcsLocation",
-                                            String.valueOf(getPropertyValue("Enterprise")) +
-                                                    ':' +
-                                                    getPropertyValue("CanadaInterCompany") +
-                                                    ':' +
-                                                    getPropertyValue("Balance"));
-                                } else
-                                    region = null;
-                            } else
-                                region = null;
+                            for (String key : opCos.keySet()) {
+                                if (opCos.get(key).keySet().contains(2)) {
+                                    region = key;
+                                    opCo = opCos.get(key);
+                                }
+                            }
+                            String filter = cimplSt[2];
+                            String path = String.valueOf(getPropertyValue("Enterprise")) +
+                                    ':' +
+                                    getPropertyValue("CanadaInterCompany") +
+                                    ':' + region;
+                            if (opCo != null)
+                                path += ":" + opCo.get(cimplSt[2]);
+                            else {
+                                region = "";
+                                path += ":" + getPropertyValue(cimplSt[2]);
+                            }
+                            //path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
+                            fileNameSegements.put("otcsLocation", path);
                         }
 
                         if (region != null) {
                             node = new Import.Node();
                             node.setType(getPropertyValue("TYPE"));
                             node.setAction(getPropertyValue("ACTION"));
-                            node.setFile(String.valueOf(getPropertyValue("FilePath")) + pdfFileName);
+                            node.setFile(String.valueOf(getPropertyValue("FilePath")) + fileName);
                             node.setLocation(fileNameSegements.get("otcsLocation"));
                             moveFileIntoDestinationFolder(
                                     files[i],
@@ -298,7 +293,7 @@ public class ControlFileGeneration {
                             logger.debug("File name corrupt");
                             Email.SendEmail();
                             try {
-                                throw new CimplErrorMessage(pdfFile);
+                                throw new CimplErrorMessage(file);
                             } catch (CimplErrorMessage adobeError) {
                                 logger.error(adobeError.getMessage());
                                 failCounter++;
@@ -341,7 +336,6 @@ public class ControlFileGeneration {
                     String.valueOf(getPropertyValue("XMLFILESERVER")) + getPropertyValue("XMLNAME") + timeFolderName + getPropertyValue("XMLFILEEXTN"));
             jaxbMarshaller.marshal(xmlInput, xmlFile);
             logger.debug("XML generated successfully ");
-
         } catch (JAXBException e) {
             logger.error(e);
         }
@@ -370,5 +364,24 @@ public class ControlFileGeneration {
             return value;
         }
         return null;
+    }
+
+    public List<OpCo> getConfigYml() {
+        // Loading the YAML file from the /resources folder
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        // Instantiating a new ObjectMapper as a YAMLFactory
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+
+        // Mapping the OpCos from the YAML file to the OpCos class
+        BatchProperties batchProperties = new BatchProperties();
+        try {
+            FileInputStream fis = new FileInputStream("config.yaml");
+            batchProperties = om.readValue(fis, BatchProperties.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(batchProperties.toString());
+        return batchProperties.getOpCos();
     }
 }
