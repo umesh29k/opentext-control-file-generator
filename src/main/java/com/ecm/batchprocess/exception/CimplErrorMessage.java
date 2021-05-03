@@ -1,4 +1,4 @@
-package com.ecm.batchprocess;
+package com.ecm.batchprocess.exception;
 
 public class CimplErrorMessage extends Exception {
     public static final long serialVersionUID = 1L;

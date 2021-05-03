@@ -1,7 +1,9 @@
 package com.ecm.batchprocess;
 
+import com.ecm.batchprocess.exception.CimplErrorMessage;
 import com.ecm.batchprocess.model.BatchProperties;
 import com.ecm.batchprocess.model.OpCo;
+import com.ecm.batchprocess.util.Email;
 import com.ecm.xmlgen.Import;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -17,8 +19,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.isNumeric;
 
 @Service
 public class ControlFileGeneration {
@@ -72,7 +79,7 @@ public class ControlFileGeneration {
 
     public void processImportFiles(File[] files) throws ClassNotFoundException, SQLException, FileNotFoundException, IOException {
         logger.debug("Start of processImportFiles Method");
-        StringTokenizer fileNameArray = null;
+        StringTokenizer fileNameExtract = null;
         StringTokenizer st = null;
         StringTokenizer cimplSt = null;
         String cimplInitial = null;
@@ -100,9 +107,9 @@ public class ControlFileGeneration {
                     fileName = files[i].getName();
                     logger.debug("fileName " + fileName);
                     HashMap<String, String> fileNameSegements = new HashMap<String, String>();
-                    fileNameArray = new StringTokenizer(fileName, ".");
-                    file = fileNameArray.nextToken();
-                    extn = fileNameArray.nextToken();
+                    fileNameExtract = new StringTokenizer(fileName, ".");
+                    file = fileNameExtract.nextToken();
+                    extn = fileNameExtract.nextToken();
                     fileNameSegements.put("EXT", extn);
                     cimplSt = new StringTokenizer(file, "_");
                     cimplInitial = cimplSt.nextToken();
@@ -216,7 +223,7 @@ public class ControlFileGeneration {
     public void processImportFilesIC(File[] files) throws ClassNotFoundException, SQLException, FileNotFoundException, IOException {
         logger.debug("Start of processImportFiles Method");
         Map<String, String> opCo = null;
-        String[] fileNameArray = null;
+        String[] fileNameExtract = null;
         String[] cimplSt = null;
         String cimplInitial = null;
         String cimplSt2 = null;
@@ -236,67 +243,104 @@ public class ControlFileGeneration {
                     if (files[i].length() > 0L) {
                         fileName = files[i].getName();
                         logger.debug("fileName " + fileName);
+
                         HashMap<String, String> fileNameSegements = new HashMap<String, String>();
-                        fileNameArray = fileName.split(".");
-                        file = fileNameArray[0];
-                        if (fileNameArray.length >= 2)
-                            extn = fileNameArray[fileNameArray.length - 1];
+                        fileNameExtract = fileName.split(".");
+                        file = fileNameExtract[0];
+
+                        if (fileNameExtract.length >= 2)
+                            extn = fileNameExtract[fileNameExtract.length - 1];
+
                         fileNameSegements.put("EXT", extn);
                         cimplSt = file.split("_");
                         cimplInitial = cimplSt[0];
-                        //cimplSt2 = cimplSt.nextToken();
-                        int count = 0;
 
-                        if (cimplInitial.equalsIgnoreCase("CA")) {
-                            List<String> regions = Arrays.asList(getPropertyValue("Region").split(","));
-                            for (String key : opCos.keySet()) {
-                                if (opCos.get(key).keySet().contains(2)) {
-                                    region = key;
-                                    opCo = opCos.get(key);
-                                }
-                            }
-                            String filter = cimplSt[2];
-                            String path = String.valueOf(getPropertyValue("Enterprise")) +
-                                    ':' +
-                                    getPropertyValue("CanadaInterCompany") +
-                                    ':' + region;
-                            if (opCo != null)
-                                path += ":" + opCo.get(cimplSt[2]);
-                            else {
-                                region = "";
-                                path += ":" + getPropertyValue(cimplSt[2]);
-                            }
-                            //path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
-                            fileNameSegements.put("otcsLocation", path);
+                        int count = 0;
+                        Date docDate = null;
+                        String ts;
+                        int year = 0;
+                        if (cimplSt[cimplSt.length - 1].equalsIgnoreCase(getPropertyValue("part"))) {
+                            ts = cimplSt[cimplSt.length - 2];
+                        } else {
+                            ts = cimplSt[cimplSt.length - 1];
                         }
 
-                        if (region != null) {
-                            node = new Import.Node();
-                            node.setType(getPropertyValue("TYPE"));
-                            node.setAction(getPropertyValue("ACTION"));
-                            node.setFile(String.valueOf(getPropertyValue("FilePath")) + fileName);
-                            node.setLocation(fileNameSegements.get("otcsLocation"));
-                            moveFileIntoDestinationFolder(
-                                    files[i],
-                                    String.valueOf(getPropertyValue("ARCHIVEFOLDER")) + "/");
-                            successCounter++;
-                            imp.getNode().add(node);
-                            if (successCounter > 0) {
-                                convertToXML(imp);
-                            } else {
-                                logger.debug("***************No files in Input Folder**************");
+                        if (isNumeric(ts)) {
+                            Timestamp timestamp = new Timestamp(Long.parseLong(ts));
+                            docDate = new Date(timestamp.getTime());
+                        }
+
+                        LocalDate localDate = docDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+                        if (localDate.getMonthValue() > 6)
+                            year = localDate.getYear() + 1;
+
+                        if (year != 0) {
+                            if (cimplInitial.equalsIgnoreCase("CA")) {
+                                String path = String.valueOf(getPropertyValue("Enterprise")) +
+                                        ':' +
+                                        getPropertyValue("CanadaInterCompany") +
+                                        ':' + region;
+
+                                if (cimplSt[1].equals(getPropertyValue("base"))) {
+                                    if (cimplSt[2].equals("consolidated")) {
+                                        path += ":" + getPropertyValue("consolidated");
+                                    } else {
+                                        List<String> regions = Arrays.asList(getPropertyValue("Region").split(","));
+                                        for (String key : opCos.keySet()) {
+                                            if (opCos.get(key).keySet().contains(2)) {
+                                                region = key;
+                                                opCo = opCos.get(key);
+                                            }
+                                        }
+                                        if (opCo != null)
+                                            path += ":" + opCo.get(cimplSt[2]);
+                                        else {
+                                            region = "";
+                                            path += ":" + getPropertyValue(cimplSt[2]);
+                                        }
+                                    }
+                                } else if (cimplSt[1].equals(getPropertyValue("corporate"))) {
+                                    path += ":" + getPropertyValue("corporate");
+                                } else if (cimplSt[1].equals(getPropertyValue("balance"))) {
+                                    path += ":" + getPropertyValue("balance");
+                                }
+
+                                path += ":" + Integer.toString(year);
+
+                                //String filter = cimplSt[2];
+                                //path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
+
+                                fileNameSegements.put("otcsLocation", path);
                             }
-                        } else {
-                            moveFileIntoDestinationFolder(
-                                    files[i],
-                                    String.valueOf(getPropertyValue("FAILEDFOLDER")) + "/");
-                            logger.debug("File name corrupt");
-                            Email.SendEmail();
-                            try {
-                                throw new CimplErrorMessage(file);
-                            } catch (CimplErrorMessage adobeError) {
-                                logger.error(adobeError.getMessage());
-                                failCounter++;
+                            if (region != null) {
+                                node = new Import.Node();
+                                node.setType(getPropertyValue("TYPE"));
+                                node.setAction(getPropertyValue("ACTION"));
+                                node.setFile(String.valueOf(getPropertyValue("FilePath")) + fileName);
+                                node.setLocation(fileNameSegements.get("otcsLocation"));
+                                moveFileIntoDestinationFolder(
+                                        files[i],
+                                        String.valueOf(getPropertyValue("ARCHIVEFOLDER")) + "/");
+                                successCounter++;
+                                imp.getNode().add(node);
+                                if (successCounter > 0) {
+                                    convertToXML(imp);
+                                } else {
+                                    logger.debug("***************No files in Input Folder**************");
+                                }
+                            } else {
+                                moveFileIntoDestinationFolder(
+                                        files[i],
+                                        String.valueOf(getPropertyValue("FAILEDFOLDER")) + "/");
+                                logger.debug("File name corrupt");
+                                Email.SendEmail();
+                                try {
+                                    throw new CimplErrorMessage(file);
+                                } catch (CimplErrorMessage adobeError) {
+                                    logger.error(adobeError.getMessage());
+                                    failCounter++;
+                                }
                             }
                         }
                     }

@@ -1,6 +1,6 @@
-package com.ecm.batchprocess;
+package com.ecm.batchprocess.util;
 
-public class CimplConstants {
+public class Constants {
     public static final String GETFILES = "Input";
     public static final String FAILEDFOLDER = "FAILEDFOLDER";
     public static final String ARCHIVEFOLDER = "ARCHIVEFOLDER";
@@ -33,7 +33,7 @@ public class CimplConstants {
 }
 
 
-/* Location:              E:\infi\CIMPL\CIMPL_ControlFileGeneration.jar!\com\ecm\batchprocess\CimplConstants.class
+/* Location:              E:\infi\CIMPL\CIMPL_ControlFileGeneration.jar!\com\ecm\batchprocess\Constants.class
  * Java compiler version: 6 (50.0)
  * JD-Core Version:       1.1.3
  */

@@ -1,4 +1,6 @@
-package com.ecm.batchprocess;
+package com.ecm.batchprocess.util;
+
+import com.ecm.batchprocess.ControlFileGeneration;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;

@@ -1,3 +1,9 @@
+base: IN19B
+region: Region
+consolidated: ConsolidatedSites
+corporate: CorporateSummary
+balance: StatementBalance
+part: Part
 opCos:
     - region: Alberta
       siteIds: 181,257,823
