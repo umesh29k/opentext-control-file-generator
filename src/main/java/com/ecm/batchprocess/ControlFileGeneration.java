@@ -281,7 +281,6 @@ public class ControlFileGeneration {
                                         ':' +
                                         getPropertyValue("CanadaInterCompany") +
                                         ':' + region;
-
                                 if (cimplSt[1].equals(getPropertyValue("base"))) {
                                     if (cimplSt[2].equals("consolidated")) {
                                         path += ":" + getPropertyValue("consolidated");
@@ -294,7 +293,7 @@ public class ControlFileGeneration {
                                             }
                                         }
                                         if (opCo != null)
-                                            path += ":" + opCo.get(cimplSt[2]);
+                                            path += ":" + getPropertyValue("region") + ":" + opCo.get(cimplSt[2]);
                                         else {
                                             region = "";
                                             path += ":" + getPropertyValue(cimplSt[2]);
