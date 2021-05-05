@@ -285,14 +285,12 @@ public class ControlFileGeneration {
 
                             if (year != 0) {
                                 if (cimplInitial.equalsIgnoreCase("CA")) {
-                                    String path = String.valueOf(getPropertyValue("Enterprise")) +
-                                            ':' +
-                                            getPropertyValue("CanadaInterCompany");
-                                    if (region != null)
-                                        path += ':' + region;
+                                    StringBuffer path = new StringBuffer();
                                     if (cimplSt[1].equals(batchProperties.getBase())) {
-                                        if ("consolidated".contains(cimplSt[2])) {
-                                            path += ":" + batchProperties.getConsolidated();
+                                        if (batchProperties.getConsolidated().contains(cimplSt[2])) {
+                                            path.append(String.valueOf(getPropertyValue("Enterprise")) +
+                                                    ':' +
+                                                    getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getConsolidated());
                                         } else {
                                             List<String> regions = Arrays.asList(batchProperties.getRegion().split(","));
                                             opCo = null;
@@ -301,27 +299,34 @@ public class ControlFileGeneration {
                                                     if (siteId.trim().equalsIgnoreCase(cimplSt[2])) {
                                                         region = key;
                                                         opCo = opCos.get(key);
+                                                        path.append(String.valueOf(getPropertyValue("Enterprise")) +
+                                                                ':' +
+                                                                getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getRegion() + ":" + opCo.get(cimplSt[2]));
                                                         break;
                                                     }
                                                 }
                                             }
-                                            if (opCo != null)
-                                                path += ":" + batchProperties.getRegion() + ":" + opCo.get(cimplSt[2]);
-                                            else
-                                                path += ":" + batchProperties.getConsolidated();
+                                            if (opCo == null)
+                                                path.append(String.valueOf(getPropertyValue("Enterprise")) +
+                                                        ':' +
+                                                        getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getConsolidated());
                                         }
                                     } else if (batchProperties.getCorporate().contains(cimplSt[1])) {
-                                        path += ":" + batchProperties.getCorporate();
+                                        path.append(String.valueOf(getPropertyValue("Enterprise")) +
+                                                ':' +
+                                                getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getCorporate());
                                     } else if (batchProperties.getBalance().contains(cimplSt[1]) || cimplSt[1].contains("Ending")) {
-                                        path += ":" + batchProperties.getBalance();
+                                        path.append(String.valueOf(getPropertyValue("Enterprise")) +
+                                                ':' +
+                                                getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getBalance());
                                     }
 
-                                    path += ":" + Integer.toString(year);
+                                    path.append(":" + Integer.toString(year));
 
                                     //String filter = cimplSt[2];
                                     //path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
 
-                                    fileNameSegements.put("otcsLocation", path);
+                                    fileNameSegements.put("otcsLocation", path.toString());
                                     isOkay = true;
                                 }
                                 if (isOkay) {
