@@ -31,7 +31,7 @@ public class ControlFileGeneration {
     private static Properties loghandle = new Properties();
     private Map<String, Map<String, String>> opCos = new HashMap<>();
     private BatchProperties batchProperties;
-
+    private String timeFolderName = null;
     public void main() throws CimplErrorMessage, IOException, ClassNotFoundException, SQLException {
         ControlFileGeneration obj = new ControlFileGeneration();
         //initialize batch properties
@@ -387,7 +387,8 @@ public class ControlFileGeneration {
 
     private void convertToXML(Import xmlInput) {
         logger.debug("Start of convertToXML Method");
-        String timeFolderName = getCurrentTimeStamp();
+        if(timeFolderName == null)
+        timeFolderName = getCurrentTimeStamp();
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(new Class[]{Import.class});
             Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
