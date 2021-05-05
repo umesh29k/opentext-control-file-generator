@@ -301,7 +301,7 @@ public class ControlFileGeneration {
                                                         opCo = opCos.get(key);
                                                         path.append(String.valueOf(getPropertyValue("Enterprise")) +
                                                                 ':' +
-                                                                getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getRegion() + ":" + opCo.get(cimplSt[2]));
+                                                                getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getRegion() + ":" + region + ":" + opCo.get(cimplSt[2]));
                                                         break;
                                                     }
                                                 }
