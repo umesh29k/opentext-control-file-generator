@@ -39,6 +39,34 @@ public class BatchProperties {
         this.part = part;
     }
 
+    public String getBase() {
+        return base;
+    }
+
+    public void setBase(String base) {
+        this.base = base;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public String getConsolidated() {
+        return consolidated;
+    }
+
+    public String getCorporate() {
+        return corporate;
+    }
+
+    public String getBalance() {
+        return balance;
+    }
+
+    public String getPart() {
+        return part;
+    }
+
     @Override
     public String toString() {
         return "BatchProperties{" +
