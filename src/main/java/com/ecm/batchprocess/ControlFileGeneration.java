@@ -43,9 +43,9 @@ public class ControlFileGeneration {
             String[] siteNames = opco.getSiteNames().split(",");
             Map<String, String> mapper = new HashMap<>();
             for (int i = 0; i < siteIds.length; i++) {
-                mapper.put(siteIds[i], siteNames[i]);
+                mapper.put(siteIds[i].trim(), siteNames[i].trim());
             }
-            opCos.put(region, mapper);
+            opCos.put(region.trim(), mapper);
         }
         try {
             confighandle.load(new FileInputStream("config.properties"));
