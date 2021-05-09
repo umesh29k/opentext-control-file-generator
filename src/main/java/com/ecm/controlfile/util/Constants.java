@@ -1,4 +1,4 @@
-package com.ecm.batchprocess.util;
+package com.ecm.controlfile.util;
 
 public class Constants {
     public static final String GETFILES = "Input";
@@ -31,9 +31,3 @@ public class Constants {
     public static final String Subject = "Subject";
     public static final String Message = "Message";
 }
-
-
-/* Location:              E:\infi\CIMPL\CIMPL_ControlFileGeneration.jar!\com\ecm\batchprocess\Constants.class
- * Java compiler version: 6 (50.0)
- * JD-Core Version:       1.1.3
- */

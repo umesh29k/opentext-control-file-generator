@@ -1,6 +1,6 @@
-package com.ecm.batchprocess.util;
+package com.ecm.controlfile.util;
 
-import com.ecm.batchprocess.ControlFileGeneration;
+import com.ecm.controlfile.ControlFileGeneration;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
@@ -43,6 +43,5 @@ public class Email {
         } catch (MessagingException ex) {
             ex.printStackTrace();
         }
-
     }
 }

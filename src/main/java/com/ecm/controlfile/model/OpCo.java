@@ -1,4 +1,4 @@
-package com.ecm.batchprocess.model;
+package com.ecm.controlfile.model;
 
 public class OpCo {
     private String region;

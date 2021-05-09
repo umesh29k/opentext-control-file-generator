@@ -1,10 +1,10 @@
-package com.ecm.batchprocess;
+package com.ecm.controlfile;
 
-import com.ecm.batchprocess.exception.CimplErrorMessage;
-import com.ecm.batchprocess.model.BatchProperties;
-import com.ecm.batchprocess.model.OpCo;
-import com.ecm.batchprocess.util.Email;
-import com.ecm.xmlgen.Import;
+import com.ecm.controlfile.exception.UtilException;
+import com.ecm.controlfile.model.BatchProperties;
+import com.ecm.controlfile.model.OpCo;
+import com.ecm.controlfile.util.Email;
+import com.ecm.dto.ImportSchema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.log4j.Logger;
@@ -29,15 +29,25 @@ public class ControlFileGeneration {
     static final Logger logger = Logger.getLogger(ControlFileGeneration.class);
     private static Properties confighandle = new Properties();
     private static Properties loghandle = new Properties();
-    private Map<String, Map<String, String>> opCos = new HashMap<>();
     private BatchProperties batchProperties;
+    /**
+     * map of map
+     * where base map is the key of regions
+     * and child map is the key with site-key
+     * example: Alberta => [ 181 => 181-Calgary,
+     *                       257 => 257-Edmonton,
+     *                       823 => 823-Calgary RDC
+     *                     ]
+     */
+    private Map<String, Map<String, String>> opCos = new HashMap<>();
     private String timeFolderName = null;
-    public void main() throws CimplErrorMessage, IOException, ClassNotFoundException, SQLException {
-        ControlFileGeneration obj = new ControlFileGeneration();
-        //initialize batch properties
+
+    public void main() throws UtilException, IOException, ClassNotFoundException, SQLException {
+        //load data from config.yaml file to BatchProperties reference variable
         getConfigYml();
-        List<OpCo> opCosList = batchProperties.getOpCos();
-        for (OpCo opco : opCosList) {
+
+        //load data from OpCos list of batchProperties object to opCos map
+        for (OpCo opco : batchProperties.getOpCos()) {
             String region = opco.getRegion();
             String[] siteIds = opco.getSiteIds().split(",");
             String[] siteNames = opco.getSiteNames().split(",");
@@ -47,20 +57,22 @@ public class ControlFileGeneration {
             }
             opCos.put(region, mapper);
         }
+
         try {
             confighandle.load(new FileInputStream("config.properties"));
             loghandle.load(new FileInputStream("log4j.properties"));
             PropertyConfigurator.configure(confighandle);
             PropertyConfigurator.configure(loghandle);
         } catch (IOException e) {
-            throw new CimplErrorMessage(
+            throw new UtilException(
                     "Property file not found");
         }
-        File[] localFiles = obj.getLocalFiles();
+
+        File[] localFiles = getLocalFiles();
         if (localFiles != null) {
             if (localFiles.length > 0) {
-                //obj.processImportFiles(localFiles);
-                obj.processImportFilesIC(localFiles, batchProperties, opCos);
+                //processImportFiles(localFiles);
+                processImportFilesIC(localFiles, batchProperties, opCos);
             } else {
                 logger.debug("No files in the input folder");
             }
@@ -95,8 +107,8 @@ public class ControlFileGeneration {
         boolean jobFailed = false;
         int successCounter = 0;
         int failCounter = 0;
-        Import imp = new Import();
-        Import.Node node = new Import.Node();
+        ImportSchema imp = new ImportSchema();
+        ImportSchema.Node node = new ImportSchema.Node();
         try {
             for (int i = 0; i < files.length; i++) {
                 VendorName = "VendorName";
@@ -142,7 +154,7 @@ public class ControlFileGeneration {
                                     InvoiceDate = fileNameSegements.get("InvoiceDate");
                             }
                         }
-                        node = new Import.Node();
+                        node = new ImportSchema.Node();
                         node.setType(getPropertyValue("TYPE"));
                         node.setAction(getPropertyValue("ACTION"));
                         node.setFile(String.valueOf(getPropertyValue("FilePath")) +
@@ -158,7 +170,7 @@ public class ControlFileGeneration {
                                         ':' +
                                         (String) fileNameSegements
                                                 .get("VendorName"));
-                        Import.Node.Category category = new Import.Node.Category();
+                        ImportSchema.Node.Category category = new ImportSchema.Node.Category();
                         category.setName(getPropertyValue("Category"));
                         category.getAttribute()
                                 .add(createAttribute(
@@ -200,8 +212,8 @@ public class ControlFileGeneration {
                         logger.debug("File name corrupt");
                         Email.SendEmail();
                         try {
-                            throw new CimplErrorMessage(file);
-                        } catch (CimplErrorMessage adobeError) {
+                            throw new UtilException(file);
+                        } catch (UtilException adobeError) {
                             logger.error(adobeError.getMessage());
                             failCounter++;
                         }
@@ -226,7 +238,6 @@ public class ControlFileGeneration {
         String[] fileNameExtract = null;
         String[] cimplSt = null;
         String cimplInitial = null;
-        String cimplSt2 = null;
         String fileName = null;
         String file = null;
         String extn = null;
@@ -235,8 +246,8 @@ public class ControlFileGeneration {
         int successCounter = 0;
         int failCounter = 0;
         String region = null;
-        Import imp = new Import();
-        Import.Node node = new Import.Node();
+        ImportSchema imp = new ImportSchema();
+        ImportSchema.Node node = new ImportSchema.Node();
         try {
             for (int i = 0; i < files.length; i++) {
                 boolean isOkay = false;
@@ -330,7 +341,7 @@ public class ControlFileGeneration {
                                     isOkay = true;
                                 }
                                 if (isOkay) {
-                                    node = new Import.Node();
+                                    node = new ImportSchema.Node();
                                     node.setType(getPropertyValue("TYPE"));
                                     node.setAction(getPropertyValue("ACTION"));
                                     node.setFile(String.valueOf(getPropertyValue("FilePath")) + fileName);
@@ -352,8 +363,8 @@ public class ControlFileGeneration {
                                     logger.debug("File name corrupt");
                                     Email.SendEmail();
                                     try {
-                                        throw new CimplErrorMessage(file);
-                                    } catch (CimplErrorMessage adobeError) {
+                                        throw new UtilException(file);
+                                    } catch (UtilException adobeError) {
                                         logger.error(adobeError.getMessage());
                                         failCounter++;
                                     }
@@ -385,12 +396,12 @@ public class ControlFileGeneration {
         logger.debug("End of moveFileIntoDestinationFolder Method");
     }
 
-    private void convertToXML(Import xmlInput) {
+    private void convertToXML(ImportSchema xmlInput) {
         logger.debug("Start of convertToXML Method");
         if(timeFolderName == null)
         timeFolderName = getCurrentTimeStamp();
         try {
-            JAXBContext jaxbContext = JAXBContext.newInstance(new Class[]{Import.class});
+            JAXBContext jaxbContext = JAXBContext.newInstance(new Class[]{ImportSchema.class});
             Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
             jaxbMarshaller.setProperty("jaxb.formatted.output", Boolean.valueOf(true));
             jaxbMarshaller.marshal(xmlInput, System.out);
@@ -411,9 +422,9 @@ public class ControlFileGeneration {
         return strDate;
     }
 
-    private Import.Node.Category.Attribute createAttribute(String columnName, String value) {
+    private ImportSchema.Node.Category.Attribute createAttribute(String columnName, String value) {
         logger.debug("Start of createAttribute Method");
-        Import.Node.Category.Attribute attribute = new Import.Node.Category.Attribute();
+        ImportSchema.Node.Category.Attribute attribute = new ImportSchema.Node.Category.Attribute();
         attribute.setName(columnName);
         attribute.setValue(value);
         logger.debug("End of createAttribute Method");

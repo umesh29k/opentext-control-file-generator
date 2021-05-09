@@ -1,4 +1,4 @@
-package com.ecm.batchprocess.model;
+package com.ecm.controlfile.model;
 
 import java.util.List;
 
