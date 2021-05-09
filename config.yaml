@@ -18,7 +18,7 @@ opCos:
       siteIds: 447,573,574,575,385,386,387
       siteNames: 447-SMS,573-SyscoCanada_FinancialServices,574-2234842_AlbertaULC,575-2234829_AlbertaULC,385-Holdings_Ltd,386-Holdings_of_BC,387-Holdings_of_Kelowna
     - region: Freshpoint
-      siteIds: 127, 300, 302
+      siteIds: 127,127,127,127,300,302
       siteNames: 127-Freshpoint_Allied,127-Freshpoint_Nanaimo,127-Freshpoint_Vancouver,127-Freshpoint_Vanport,300-Freshpoint_VANFreshCut,302-Freshpoint_TORFreshCut
     - region: GWW
       siteIds: 220
@@ -27,7 +27,7 @@ opCos:
       siteIds: 077,421,442
       siteNames: 077-Peterborough,421-Cash_and_Carry,442-Ottawa
     - region: Ontario_South
-      siteIds: 180,256,273,338, 838
+      siteIds: 180,256,273,338,838
       siteNames: 180-Toronto,256-Milton,273-Kingston,338-Southwestern_Ontario,838-SSWO RDC
     - region: Prairies
       siteIds: 258,259,336
