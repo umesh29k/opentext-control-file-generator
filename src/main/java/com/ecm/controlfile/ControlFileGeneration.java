@@ -35,9 +35,9 @@ public class ControlFileGeneration {
      * where base map is the key of regions
      * and child map is the key with site-key
      * example: Alberta => [ 181 => 181-Calgary,
-     *                       257 => 257-Edmonton,
-     *                       823 => 823-Calgary RDC
-     *                     ]
+     * 257 => 257-Edmonton,
+     * 823 => 823-Calgary RDC
+     * ]
      */
     private Map<String, Map<String, String>> opCos = new HashMap<>();
     private String timeFolderName = null;
@@ -270,7 +270,10 @@ public class ControlFileGeneration {
                             cimplInitial = cimplSt[0];
 
                             int count = 0;
-                            Date docDate = null;
+
+                            /**
+                             * FISCAL Year logic start
+                             */
                             String ts;
                             int year = 0;
 
@@ -293,6 +296,9 @@ public class ControlFileGeneration {
                                     year = Integer.parseInt(yearStr);
                                 }
                             }
+                            /**
+                             * FISCAL Year logic end here
+                             */
 
                             if (year != 0) {
                                 if (cimplInitial.equalsIgnoreCase("CA")) {
@@ -318,9 +324,9 @@ public class ControlFileGeneration {
                                                 }
                                             }
                                             if (opCo == null)
-                                                path.append(String.valueOf(getPropertyValue("Enterprise")) +
-                                                        ':' +
-                                                        getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getConsolidated());
+                                                isOkay = false;
+                                            // path.append(String.valueOf(getPropertyValue("Enterprise")) +
+                                            // ':' + getPropertyValue("CanadaInterCompany") + ":" + batchProperties.getConsolidated());
                                         }
                                     } else if (batchProperties.getCorporate().contains(cimplSt[1])) {
                                         path.append(String.valueOf(getPropertyValue("Enterprise")) +
@@ -334,8 +340,8 @@ public class ControlFileGeneration {
 
                                     path.append(":" + Integer.toString(year));
 
-                                    //String filter = cimplSt[2];
-                                    //path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
+                                    // String filter = cimplSt[2];
+                                    // path += ":" + getPropertyValue(region).substring(getPropertyValue(region).indexOf(filter)).split(",")[0];
 
                                     fileNameSegements.put("otcsLocation", path.toString());
                                     isOkay = true;
@@ -357,21 +363,30 @@ public class ControlFileGeneration {
                                         logger.debug("***************No files in Input Folder**************");
                                     }
                                 } else {
-                                    moveFileIntoDestinationFolder(
-                                            files[i],
-                                            String.valueOf(getPropertyValue("FAILEDFOLDER")) + "/");
-                                    logger.debug("File name corrupt");
-                                    Email.SendEmail();
-                                    try {
-                                        throw new UtilException(file);
-                                    } catch (UtilException adobeError) {
-                                        logger.error(adobeError.getMessage());
-                                        failCounter++;
-                                    }
+                                    isOkay = false;
                                 }
+                            } else {
+                                isOkay = false;
                             }
+                        } else {
+                            isOkay = false;
                         }
+                    } else {
+                        isOkay = false;
                     }
+                if (!isOkay) {
+                    moveFileIntoDestinationFolder(
+                            files[i],
+                            String.valueOf(getPropertyValue("FAILEDFOLDER")) + "/");
+                    logger.debug("File name corrupt");
+                    Email.SendEmail();
+                    try {
+                        throw new UtilException(file);
+                    } catch (UtilException adobeError) {
+                        logger.error(adobeError.getMessage());
+                        failCounter++;
+                    }
+                }
             }
         } catch (
                 Exception e) {
@@ -398,8 +413,8 @@ public class ControlFileGeneration {
 
     private void convertToXML(ImportSchema xmlInput) {
         logger.debug("Start of convertToXML Method");
-        if(timeFolderName == null)
-        timeFolderName = getCurrentTimeStamp();
+        if (timeFolderName == null)
+            timeFolderName = getCurrentTimeStamp();
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(new Class[]{ImportSchema.class});
             Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
